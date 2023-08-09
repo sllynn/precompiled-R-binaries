@@ -1,30 +1,40 @@
 # Databricks notebook source
 # MAGIC %md # Issue description
-# MAGIC
-# MAGIC ## R packages and native code dependencies
+
+# COMMAND ----------
+
+# MAGIC %md ## R packages and native code dependencies
 # MAGIC - Many R packages which allow users to execute computationally intensive tasks (e.g. geospatial data processing, simulation or probabilistic modelling) have dependencies on C, C++, and Fortran code which is linked and called at run time.
-# MAGIC - In order for this to work, the linked code needs to be compiled and available to the R interpreter. Exactly what this compiled code looks like will depend on the OS, platform architecture and compilation toolchain of the machine in which the R interpreter is running.
-# MAGIC - Most R package developers publish their source code (including any "native" elements) to CRAN, the centralised repository for R packages.
-# MAGIC
-# MAGIC ## How R packages are served from CRAN
-# MAGIC - CRAN hosts both the source code and a selection of pre-compiled binaries for packages in the repository index.
-# MAGIC - The "selection" extends to common "flavours", including OS, arch, R version, compilers and locales.
-# MAGIC - When you ask to install a package from the R interpreter (or from within RStudio) on your local Windows or MacOS machine allows you to quickly install packages using the pre-compiled binaries, i.e. without the need to compile them from source in your local environment.
+# MAGIC - In order for this to work, the linked code needs to be compiled and available to the R interpreter. Exactly what this compiled code looks like will depend on the OS, platform architecture and compilation toolchain of the machine on which the R interpreter is running.
+# MAGIC - Most R package maintainers publish their source code (including any "native" elements) to CRAN, the centralised repository for R packages. CRAN tests that the code will compile and run on a number of different host ['flavours'](https://cran.r-project.org/web/checks/check_flavors.html) before allowing submission and updating the repository index.
+
+# COMMAND ----------
+
+# MAGIC %md ## How R packages are served from CRAN
+# MAGIC - For each package in the repository index, CRAN hosts both the source code and a selection of pre-compiled binaries for common OS, arch and R version combinations.
+# MAGIC - When you ask to install a package from the R interpreter (or from within RStudio), R checks to see if a pre-compiled binary is available for your platform. If you're working in Windows or MacOS, this generally _will_ be the case and you can quickly install packages without the need to compile them from source in your local environment.
 # MAGIC - In the case of Linux systems, the CRAN maintainers have determined that there are just too many variants of OS and architecture to make serving pre-compiled binaries practical. Instead, CRAN provides only the source code and compilation / installation recipe for Linux users. When you request a new package, your R interpreter must kick-off and oversee this process.
-# MAGIC - This is why, when installing packages within the Databricks driver / worker environments (which currently run on Ubuntu linux 22.04), the installation process takes a long time to complete.
-# MAGIC
-# MAGIC ## Databricks clusters
+# MAGIC - This is why, when installing packages within the Databricks driver / worker environments (which currently run on Ubuntu linux 22.04), the installation process often takes more time to complete.
+
+# COMMAND ----------
+
+# MAGIC %md ## Databricks clusters
 # MAGIC - Databricks clusters are "persist nothing" compute environments where user libraries do not persist between restarts.
-# MAGIC - Pinning R packages to the cluster in the Clusters UI can result in very long start-up times, especially if these are packages with heavy native code dependencies.
-# MAGIC
-# MAGIC ## Notebook scoped libraries
+# MAGIC - Each package pinned to the cluster must therefore be reinstalled when the cluster starts up.
+# MAGIC - Pinning lots of R packages to the cluster in the Clusters UI can result in very long start-up times (especially if these are packages with heavy native code dependencies) and will prevent any users executing code on the cluster until the installation process(es) are completed.
+
+# COMMAND ----------
+
+# MAGIC %md ## Notebook scoped libraries
 # MAGIC Libraries in Databricks _do not_ need to be cluster-scoped.
 # MAGIC - They can be installed from within the notebook code, helping ameliorate issues around version clash, slow start-up time and issues around reproducibility. Consider whether this is a better option for your team.
-# MAGIC - Note, they will need to be reinstalled when the notebook is detached from the cluster.
-# MAGIC
-# MAGIC ## RStudio
+# MAGIC - The trade off is that the installation is only deferred to the point in time that a given user needs to use a particular package. Packages will still need to be reinstalled when the notebook is detached from the cluster, either through a manual detach / reattach operation, or by the cluster being terminated through inactivity.
+
+# COMMAND ----------
+
+# MAGIC %md ## RStudio
 # MAGIC Multiple options exist for working with RStudio on Databricks.
-# MAGIC - You can connect your RStudio client to a Databricks Cluster or SQL Warehouse using the J/ODBC connectors to retrieve data and perform your analysis locally.
+# MAGIC - You can connect your RStudio client to a Databricks Cluster or SQL Warehouse using the J/ODBC connectors to retrieve data and perform your analysis locally. In this case, you shouldn't need to install R packages on the cluster at all.
 # MAGIC - You can also choose to run RStudio server on the cluster driver and access the interface through the Clusters UI. In this scenario, you still face the obstacle of needing to install packages onto the cluster.
 
 # COMMAND ----------
@@ -269,7 +279,3 @@ renv::install("arrow")
 # COMMAND ----------
 
 # MAGIC %md Don't forget to tell users to use `renv::install()` instead of `install.packages()`.
-
-# COMMAND ----------
-
-
